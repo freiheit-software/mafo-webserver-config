@@ -1,0 +1,66 @@
+upstream wordpress {
+	server localhost:9080;
+}
+upstream registration {
+	server localhost:9081;
+}
+
+
+server {
+   listen 80;
+   server_name 82.165.116.57;
+
+   location / {
+       proxy_pass http://wordpress;   
+   }
+}
+
+server {
+    listen 80;
+
+    server_name mannheim-forum.org anmeldung.mannheim-forum.org www.mannheim-forum.org www.anmeldung.mannheim-forum.org;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name www.mannheim-forum.org mannheim-forum.com www.mannheim-forum.com;
+
+    ssl_certificate /srv/mafo-wordpress/certs/fullchain.pem;
+    ssl_certificate_key /srv/mafo-wordpress/certs/privkey.pem;
+
+    return 301 https://mannheim-forum.org$request_uri;
+}
+
+server {
+    listen 443 ssl;
+
+    server_name mannheim-forum.org;
+    
+	ssl_certificate /srv/mafo-wordpress/certs/fullchain.pem;
+	ssl_certificate_key /srv/mafo-wordpress/certs/privkey.pem;
+
+	location / {
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    		proxy_set_header X-Forwarded-Proto $scheme;
+    		proxy_set_header Host $http_host;
+    		proxy_redirect off;
+		proxy_pass http://wordpress;
+	}
+}
+
+server {
+	listen 443 ssl;
+	server_name anmeldung.mannheim-forum.org;
+
+	ssl_certificate /srv/mafo-web/certs/fullchain.pem;
+	ssl_certificate_key /srv/mafo-web/certs/privkey.pem;
+
+	location / {
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    		proxy_set_header X-Forwarded-Proto $scheme;
+    		proxy_set_header Host $http_host;
+    		proxy_redirect off;
+		proxy_pass http://registration;
+	}	
+}
